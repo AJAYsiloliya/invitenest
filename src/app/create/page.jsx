@@ -1,18 +1,19 @@
 "use client";
 
+import { Suspense, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import templates from "@/data/templates";
 import InvitationPreview from "@/components/InvitationPreview";
 
-export default function Create() {
+function CreateContent() {
   const [invitationId, setInvitationId] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
+
   const searchParams = useSearchParams();
   const router = useRouter();
+
   const templateId = searchParams.get("template");
 
   const selectedTemplate = templates.find(
@@ -90,6 +91,7 @@ export default function Create() {
           </div>
         </div>
       )}
+
       <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2">
         {/* Form */}
         <div>
@@ -105,7 +107,9 @@ export default function Create() {
             {selectedTemplate?.type === "Wedding" ? (
               <>
                 <div>
-                  <label className="mb-2 block font-medium">Groom Name</label>
+                  <label className="mb-2 block font-medium">
+                    Groom Name
+                  </label>
 
                   <input
                     type="text"
@@ -118,7 +122,9 @@ export default function Create() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-medium">Bride Name</label>
+                  <label className="mb-2 block font-medium">
+                    Bride Name
+                  </label>
 
                   <input
                     type="text"
@@ -147,6 +153,7 @@ export default function Create() {
 
             <div>
               <label className="mb-2 block font-medium">Date</label>
+
               <input
                 type="date"
                 name="date"
@@ -158,6 +165,7 @@ export default function Create() {
 
             <div>
               <label className="mb-2 block font-medium">Time</label>
+
               <input
                 type="time"
                 name="time"
@@ -169,6 +177,7 @@ export default function Create() {
 
             <div>
               <label className="mb-2 block font-medium">Venue</label>
+
               <input
                 type="text"
                 name="venue"
@@ -181,6 +190,7 @@ export default function Create() {
 
             <div>
               <label className="mb-2 block font-medium">Message</label>
+
               <textarea
                 name="message"
                 value={form.message}
@@ -201,8 +211,19 @@ export default function Create() {
         </div>
 
         {/* Live Preview */}
-        <InvitationPreview form={form} selectedTemplate={selectedTemplate} />
+        <InvitationPreview
+          form={form}
+          selectedTemplate={selectedTemplate}
+        />
       </div>
     </main>
+  );
+}
+
+export default function Create() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateContent />
+    </Suspense>
   );
 }

@@ -1,7 +1,14 @@
 "use client";
 
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
 import { Suspense, useState } from "react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
 import templates from "@/data/templates";
@@ -10,6 +17,8 @@ import InvitationPreview from "@/components/InvitationPreview";
 function CreateContent() {
   const [invitationId, setInvitationId] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [saveError, setSaveError] = useState("");
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -40,14 +49,53 @@ function CreateContent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const newErrors = {};
+
+    if (selectedTemplate?.type === "Wedding") {
+      if (!form.groomName.trim()) {
+        newErrors.groomName = "Groom name is required";
+      }
+
+      if (!form.brideName.trim()) {
+        newErrors.brideName = "Bride name is required";
+      }
+    } else {
+      if (!form.personName.trim()) {
+        newErrors.personName = "Name is required";
+      }
+    }
+
+    if (!form.date) {
+      newErrors.date = "Date is required";
+    }
+
+    if (!form.time) {
+      newErrors.time = "Time is required";
+    }
+
+    if (!form.venue.trim()) {
+      newErrors.venue = "Venue is required";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
+    const hasAccess = await checkPaidAccess();
+
+    if (!hasAccess) {
+      alert("Is premium template ko use karne ke liye pehle payment karein.");
+      return;
+    }
+
     try {
       const docRef = await addDoc(collection(db, "invitations"), {
         templateId: selectedTemplate?.id,
         form: form,
         createdAt: serverTimestamp(),
       });
-
-      console.log("Invitation ID:", docRef.id);
 
       localStorage.setItem(
         "invitationData",
@@ -60,9 +108,28 @@ function CreateContent() {
       setInvitationId(docRef.id);
       setShowSuccess(true);
     } catch (error) {
-      console.error(error);
-      alert("Invitation save nahi hui");
+      setSaveError("Invitation save nahi hui. Please dobara try karein.");
     }
+  };
+
+  const checkPaidAccess = async () => {
+    if (!selectedTemplate || selectedTemplate.price <= 0) {
+      return true;
+    }
+
+    const cookieResponse = await fetch("/api/payment/check-access", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        templateId: selectedTemplate.id,
+      }),
+    });
+
+    const data = await cookieResponse.json();
+
+    return data.hasAccess;
   };
 
   return (
@@ -103,13 +170,17 @@ function CreateContent() {
             Selected: {selectedTemplate?.name || "No template"}
           </p>
 
+          {saveError && (
+            <div className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-sm font-medium text-red-600">
+              {saveError}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             {selectedTemplate?.type === "Wedding" ? (
               <>
                 <div>
-                  <label className="mb-2 block font-medium">
-                    Groom Name
-                  </label>
+                  <label className="mb-2 block font-medium">Groom Name</label>
 
                   <input
                     type="text"
@@ -119,12 +190,15 @@ function CreateContent() {
                     placeholder="Enter groom name"
                     className="w-full rounded-xl border border-pink-200 px-4 py-3 outline-none focus:border-pink-500"
                   />
+                  {errors.groomName && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.groomName}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-medium">
-                    Bride Name
-                  </label>
+                  <label className="mb-2 block font-medium">Bride Name</label>
 
                   <input
                     type="text"
@@ -134,6 +208,11 @@ function CreateContent() {
                     placeholder="Enter bride name"
                     className="w-full rounded-xl border border-pink-200 px-4 py-3 outline-none focus:border-pink-500"
                   />
+                  {errors.brideName && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.brideName}
+                    </p>
+                  )}
                 </div>
               </>
             ) : (
@@ -148,6 +227,11 @@ function CreateContent() {
                   placeholder="Enter name"
                   className="w-full rounded-xl border border-pink-200 px-4 py-3 outline-none focus:border-pink-500"
                 />
+                {errors.personName && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.personName}
+                  </p>
+                )}
               </div>
             )}
 
@@ -161,6 +245,9 @@ function CreateContent() {
                 onChange={handleChange}
                 className="w-full rounded-xl border border-pink-200 px-4 py-3 outline-none focus:border-pink-500"
               />
+              {errors.date && (
+                <p className="mt-1 text-sm text-red-500">{errors.date}</p>
+              )}
             </div>
 
             <div>
@@ -173,6 +260,9 @@ function CreateContent() {
                 onChange={handleChange}
                 className="w-full rounded-xl border border-pink-200 px-4 py-3 outline-none focus:border-pink-500"
               />
+              {errors.time && (
+                <p className="mt-1 text-sm text-red-500">{errors.time}</p>
+              )}
             </div>
 
             <div>
@@ -186,6 +276,9 @@ function CreateContent() {
                 placeholder="Enter venue"
                 className="w-full rounded-xl border border-pink-200 px-4 py-3 outline-none focus:border-pink-500"
               />
+              {errors.venue && (
+                <p className="mt-1 text-sm text-red-500">{errors.venue}</p>
+              )}
             </div>
 
             <div>
@@ -211,10 +304,7 @@ function CreateContent() {
         </div>
 
         {/* Live Preview */}
-        <InvitationPreview
-          form={form}
-          selectedTemplate={selectedTemplate}
-        />
+        <InvitationPreview form={form} selectedTemplate={selectedTemplate} />
       </div>
     </main>
   );

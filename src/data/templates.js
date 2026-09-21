@@ -62,7 +62,7 @@ const templates = [
     name: "Romantic Invitation",
     type: "Love",
     image: "/templates/love-2.jpg",
-    price: 49,
+    price: 1,
     design: "romantic-invitation",
   },
 ];

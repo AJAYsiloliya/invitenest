@@ -138,6 +138,7 @@ const TemplateCard = ({ template }) => {
           alt={template.name}
           width={500}
           height={700}
+          loading="eager"
           className="h-72 w-full bg-gray-100 object-contain transition duration-500 group-hover:scale-105"
         />
 

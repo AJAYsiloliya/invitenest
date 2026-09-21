@@ -6,7 +6,6 @@ import { getIdToken, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import Image from "next/image";
 import Link from "next/link";
-import { load } from "@cashfreepayments/cashfree-js";
 
 const TemplateCard = ({ template }) => {
   const router = useRouter();
@@ -14,15 +13,48 @@ const TemplateCard = ({ template }) => {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [user, setUser] = useState(null);
 
+  const isPaid = template.price > 0;
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+
+      if (!currentUser || !isPaid) {
+        setIsUnlocked(false);
+        return;
+      }
+
+      try {
+        const token = await getIdToken(currentUser);
+
+        const response = await fetch("/api/payment/check-access", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            templateId: template.id,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.hasAccess) {
+          setIsUnlocked(true);
+        } else {
+          setIsUnlocked(false);
+        }
+      } catch (error) {
+        console.error("Access check error:", error);
+        setIsUnlocked(false);
+      }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [template.id, isPaid]);
 
-  const isPaid = template.price > 0;
+  
 
   const handlePayment = async () => {
     if (!user) {
@@ -33,7 +65,7 @@ const TemplateCard = ({ template }) => {
     try {
       const token = await getIdToken(user);
 
-      // 1. Order create
+      // 1. PayU order create
       const response = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: {
@@ -53,36 +85,44 @@ const TemplateCard = ({ template }) => {
         return;
       }
 
-      // 2. Cashfree checkout
-      const cashfree = await load({
-        mode: "production ",
+      // 2. PayU Hosted Checkout
+      const form = document.createElement("form");
+
+      form.method = "POST";
+      form.action = data.payuUrl;
+
+      const paymentFields = {
+        key: data.key,
+        txnid: data.txnid,
+        amount: data.amount,
+        productinfo: data.productinfo,
+        firstname: data.firstname,
+        email: data.email,
+        phone: data.phone,
+        surl: data.surl,
+        furl: data.furl,
+        udf1: data.udf1,
+        udf2: data.udf2,
+        udf3: data.udf3,
+        udf4: data.udf4,
+        udf5: data.udf5,
+        hash: data.hash,
+      };
+
+      Object.entries(paymentFields).forEach(([name, value]) => {
+        const input = document.createElement("input");
+
+        input.type = "hidden";
+        input.name = name;
+        input.value = value ?? "";
+
+        form.appendChild(input);
       });
 
-      console.log("PAYMENT SESSION:", data.payment_session_id);
+      document.body.appendChild(form);
 
-      await cashfree.checkout({
-        paymentSessionId: data.payment_session_id,
-        redirectTarget: "_modal",
-      });
-
-      // 3. Payment verify
-      const verifyResponse = await fetch(
-        `/api/payment/verify-order?order_id=${data.order_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      const verifyData = await verifyResponse.json();
-
-      if (verifyData.paid) {
-        setIsUnlocked(true);
-        alert("Payment successful! Template unlocked.");
-      } else {
-        alert("Payment verify nahi hua.");
-      }
+      // PayU par redirect
+      form.submit();
     } catch (error) {
       console.error(error);
       alert("Payment process mein error aaya.");
@@ -92,7 +132,6 @@ const TemplateCard = ({ template }) => {
   return (
     <div className="group overflow-hidden rounded-2xl border border-pink-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <div className="relative overflow-hidden bg-rose-300">
-        
         <Image
           src={template.image}
           alt={template.name}
@@ -100,7 +139,6 @@ const TemplateCard = ({ template }) => {
           height={700}
           className="h-72 w-full bg-gray-100 object-contain transition duration-500 group-hover:scale-105"
         />
-          
 
         {isPaid && (
           <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/75 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">

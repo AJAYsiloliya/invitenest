@@ -1,32 +1,28 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { adminDb } from "@/lib/firebase-admin";
+import { verifyUser } from "@/lib/auth-server";
 
 export async function POST(request) {
   try {
+    const user = await verifyUser(request);
+
+    if (!user) {
+      return NextResponse.json(
+        { hasAccess: false },
+        { status: 401 },
+      );
+    }
+
     const { templateId } = await request.json();
 
     if (!templateId) {
       return NextResponse.json({ hasAccess: false });
     }
 
-    const cookieStore = await cookies();
-    const paymentCookie = cookieStore.get("invitenest_payment_order");
-
-    if (!paymentCookie) {
-      return NextResponse.json({ hasAccess: false });
-    }
-
-    const paymentData = JSON.parse(paymentCookie.value);
-
-    // Cookie wala template aur requested template same hona chahiye
-    if (Number(paymentData.templateId) !== Number(templateId)) {
-      return NextResponse.json({ hasAccess: false });
-    }
-
+    // User + Template ke basis par access check
     const accessRef = adminDb
       .collection("paidAccess")
-      .doc(`${paymentData.orderId}_${paymentData.templateId}`);
+      .doc(`${user.uid}_${Number(templateId)}`);
 
     const accessSnap = await accessRef.get();
 
@@ -37,6 +33,11 @@ export async function POST(request) {
     const accessData = accessSnap.data();
 
     if (!accessData.paid) {
+      return NextResponse.json({ hasAccess: false });
+    }
+
+    // Access user ke hi account ka hona chahiye
+    if (accessData.uid !== user.uid) {
       return NextResponse.json({ hasAccess: false });
     }
 
@@ -55,7 +56,7 @@ export async function POST(request) {
 
     return NextResponse.json(
       { hasAccess: false },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,85 +1,173 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import crypto from "crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 
-export async function GET(request) {
+export async function POST(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const orderId = searchParams.get("order_id");
+    // PayU form-urlencoded response
+    const formData = await request.formData();
 
-    if (!orderId) {
-      return NextResponse.json({ error: "Order ID missing" }, { status: 400 });
-    }
+    const responseData = Object.fromEntries(formData.entries());
 
-    // Payment wali cookie
-    const cookieStore = await cookies();
-    const paymentCookie = cookieStore.get("invitenest_payment_order");
+    const {
+      status,
+      txnid,
+      amount,
+      productinfo,
+      firstname,
+      email,
+      key,
+      hash,
+      udf1 = "",
+      udf2 = "",
+      udf3 = "",
+      udf4 = "",
+      udf5 = "",
+      mihpayid,
+    } = responseData;
 
-    if (!paymentCookie) {
+    // Required fields
+    if (
+      !status ||
+      !txnid ||
+      !amount ||
+      !productinfo ||
+      !firstname ||
+      !email ||
+      !key ||
+      !hash
+    ) {
       return NextResponse.json(
-        { error: "Payment session not found" },
+        { error: "Invalid PayU response" },
         { status: 400 },
       );
     }
 
-    const paymentData = JSON.parse(paymentCookie.value);
-
-    // Order ID match hona chahiye
-    if (paymentData.orderId !== orderId) {
-      return NextResponse.json({ error: "Invalid order" }, { status: 400 });
+    // PayU merchant key check
+    if (key !== process.env.PAYU_MERCHANT_KEY) {
+      return NextResponse.json(
+        { error: "Invalid merchant key" },
+        { status: 400 },
+      );
     }
 
-    const response = await fetch(
-      `https://sandbox.cashfree.com/pg/orders/${orderId}`,
-      {
-        method: "GET",
-        headers: {
-          "x-client-id": process.env.CASHFREE_CLIENT_ID,
-          "x-client-secret": process.env.CASHFREE_CLIENT_SECRET,
-          "x-api-version": "2025-01-01",
-        },
-      },
+    // Original payment order Firestore se
+    const orderRef = adminDb.collection("paymentOrders").doc(txnid);
+    const orderSnap = await orderRef.get();
+
+    if (!orderSnap.exists) {
+      return NextResponse.json(
+        { error: "Payment order not found" },
+        { status: 404 },
+      );
+    }
+
+    const orderData = orderSnap.data();
+
+    // Amount tamper check
+    if (Number(amount).toFixed(2) !== Number(orderData.amount).toFixed(2)) {
+      return NextResponse.json(
+        { error: "Payment amount mismatch" },
+        { status: 400 },
+      );
+    }
+
+    // PayU reverse hash
+    const reverseHashString =
+      `${process.env.PAYU_SALT}|` +
+      `${status}||||||` +
+      `${udf5}|` +
+      `${udf4}|` +
+      `${udf3}|` +
+      `${udf2}|` +
+      `${udf1}|` +
+      `${email}|` +
+      `${firstname}|` +
+      `${productinfo}|` +
+      `${amount}|` +
+      `${txnid}|` +
+      `${key}`;
+
+    const calculatedHash = crypto
+      .createHash("sha512")
+      .update(reverseHashString)
+      .digest("hex");
+
+    // Hash verify
+    if (calculatedHash.toLowerCase() !== hash.toLowerCase()) {
+      console.error("PayU response hash mismatch:", txnid);
+
+      return NextResponse.json(
+        { error: "Payment verification failed" },
+        { status: 400 },
+      );
+    }
+
+    // Payment failed / pending
+    if (status !== "success") {
+      await orderRef.update({
+        status: "FAILED",
+        payuStatus: status,
+        mihpayid: mihpayid || null,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      return NextResponse.redirect(
+        new URL(
+          `/templates?payment=failed&txnid=${encodeURIComponent(txnid)}`,
+          request.url,
+        ),
+      );
+    }
+
+    // Already processed
+    if (orderData.status === "PAID") {
+      return NextResponse.redirect(
+        new URL(
+          `/templates?payment=success&template=${orderData.templateId}`,
+          request.url,
+        ),
+      );
+    }
+
+    // Payment order ko PAID mark karo
+    await orderRef.update({
+      status: "PAID",
+      payuStatus: status,
+      mihpayid: mihpayid || null,
+      paidAt: FieldValue.serverTimestamp(),
+    });
+
+    // 30 days access
+    const expiresAt = new Date(
+      Date.now() + 30 * 24 * 60 * 60 * 1000,
     );
 
-    const data = await response.json();
+    // Paid access user ke saath bind hoga
+    const accessId = `${orderData.uid}_${orderData.templateId}`;
 
-    console.log("Cashfree order response:", data);
-
-    if (!response.ok) {
-      return NextResponse.json({ error: data }, { status: response.status });
-    }
-
-    // Payment successful hai
-    if (data.order_status === "PAID") {
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-      await adminDb
-        .collection("paidAccess")
-        .doc(`${orderId}_${paymentData.templateId}`)
-        .set({
-          orderId: orderId,
-          templateId: paymentData.templateId,
-          paid: true,
-          purchasedAt: FieldValue.serverTimestamp(),
-          expiresAt: expiresAt,
-        });
-
-      return NextResponse.json({
+    await adminDb
+      .collection("paidAccess")
+      .doc(accessId)
+      .set({
+        uid: orderData.uid,
+        templateId: orderData.templateId,
+        txnid,
+        mihpayid: mihpayid || null,
         paid: true,
-        order_id: orderId,
-        templateId: paymentData.templateId,
-        expiresAt: expiresAt.toISOString(),
+        purchasedAt: FieldValue.serverTimestamp(),
+        expiresAt,
       });
-    }
 
-    return NextResponse.json({
-      paid: false,
-      order_id: orderId,
-      order_status: data.order_status,
-    });
+    return NextResponse.redirect(
+      new URL(
+        `/templates?payment=success&template=${orderData.templateId}`,
+        request.url,
+      ),
+    );
   } catch (error) {
-    console.error("Verify Error:", error);
+    console.error("PayU Verify Error:", error);
 
     return NextResponse.json(
       { error: "Payment verify nahi hua" },

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import templates from "@/data/templates";
 import { verifyUser } from "@/lib/auth-server";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(request) {
   try {
-    
     const user = await verifyUser(request);
 
     if (!user) {
@@ -13,7 +15,6 @@ export async function POST(request) {
 
     const { templateId } = await request.json();
 
-    // Template check
     const template = templates.find((item) => item.id === Number(templateId));
 
     if (!template) {
@@ -23,7 +24,6 @@ export async function POST(request) {
       );
     }
 
-    // Free template ke liye payment nahi
     if (template.price <= 0) {
       return NextResponse.json(
         { error: "This template is free" },
@@ -31,69 +31,76 @@ export async function POST(request) {
       );
     }
 
-    // Server khud price decide karega
-    const amount = template.price;
+    const amount = Number(template.price).toFixed(2);
+    const txnid = `INV_${Date.now()}`;
+    const productinfo = template.name;
 
-    const orderId = `invitenest_${Date.now()}`;
+    // Firebase login se email
+    const email = user.email;
 
-    const response = await fetch("https://sandbox.cashfree.com/pg/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-client-id": process.env.CASHFREE_CLIENT_ID,
-        "x-client-secret": process.env.CASHFREE_CLIENT_SECRET,
-        "x-api-version": "2025-01-01",
-      },
-      body: JSON.stringify({
-        order_id: orderId,
-        order_amount: amount,
-        order_currency: "INR",
+    // Abhi PayU ke required customer fields ke liye
+    const firstname = user.name || "InviteNest User";
+    const phone = user.phone_number || "9999999999";
 
-        customer_details: {
-          customer_id: `customer_${Date.now()}`,
-          customer_name: "InviteNest User",
-          customer_email: "test@example.com",
-          customer_phone: "9999999999",
-        },
+    const udf1 = "";
+    const udf2 = "";
+    const udf3 = "";
+    const udf4 = "";
+    const udf5 = "";
 
-        order_meta: {
-          return_url: `http://localhost:3000/payment/success?order_id={order_id}`,
-        },
-      }),
+    const hashString =
+      `${process.env.PAYU_MERCHANT_KEY}|` +
+      `${txnid}|` +
+      `${amount}|` +
+      `${productinfo}|` +
+      `${firstname}|` +
+      `${email}|` +
+      `${udf1}|` +
+      `${udf2}|` +
+      `${udf3}|` +
+      `${udf4}|` +
+      `${udf5}||||||` +
+      `${process.env.PAYU_SALT}`;
+
+    const hash = crypto.createHash("sha512").update(hashString).digest("hex");
+
+    await adminDb.collection("paymentOrders").doc(txnid).set({
+      txnid,
+      uid: user.uid,
+      templateId: template.id,
+      amount,
+      productinfo,
+      status: "CREATED",
+      createdAt: FieldValue.serverTimestamp(),
     });
 
-    const data = await response.json();
-    console.log("CASHFREE CREATE ORDER RESPONSE:", data);
+    return NextResponse.json({
+      key: process.env.PAYU_MERCHANT_KEY,
+      txnid,
+      amount,
+      productinfo,
+      firstname,
+      email,
+      phone,
 
-    if (!response.ok) {
-      console.error("Cashfree Error:", data);
+      surl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/verify-order`,
+      furl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/verify-order`,
 
-      return NextResponse.json({ error: data }, { status: response.status });
-    }
+      udf1,
+      udf2,
+      udf3,
+      udf4,
+      udf5,
 
-    const result = NextResponse.json({
-      order_id: data.order_id,
-      payment_session_id: data.payment_session_id,
+      hash,
+
+      payuUrl: "https://secure.payu.in/_payment",
+
+      templateId: template.id,
+      uid: user.uid,
     });
-
-    result.cookies.set(
-      "invitenest_payment_order",
-      JSON.stringify({
-        orderId: data.order_id,
-        templateId: template.id,
-      }),
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60,
-        path: "/",
-      },
-    );
-
-    return result;
   } catch (error) {
-    console.error("Create Order Error:", error);
+    console.error("PayU Create Order Error:", error);
 
     return NextResponse.json(
       { error: "Payment order create nahi hua" },

@@ -83,8 +83,8 @@ export async function POST(request) {
       email,
       phone,
 
-      surl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/verify-order`,
-      furl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/verify-order`,
+      surl: `${process.env.APP_URL}/api/payment/verify-order`,
+      furl: `${process.env.APP_URL}/api/payment/verify-order`,
 
       udf1,
       udf2,

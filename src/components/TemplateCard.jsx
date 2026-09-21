@@ -12,6 +12,7 @@ const TemplateCard = ({ template }) => {
 
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isPaid = template.price > 0;
 
@@ -54,18 +55,19 @@ const TemplateCard = ({ template }) => {
     return () => unsubscribe();
   }, [template.id, isPaid]);
 
-  
-
   const handlePayment = async () => {
+    if (isLoading) return;
+
     if (!user) {
       router.push("/login");
       return;
     }
 
+    setIsLoading(true);
+
     try {
       const token = await getIdToken(user);
 
-      // 1. PayU order create
       const response = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: {
@@ -82,10 +84,10 @@ const TemplateCard = ({ template }) => {
       if (!response.ok) {
         console.error(data);
         alert("Payment order create nahi hua.");
+        setIsLoading(false);
         return;
       }
 
-      // 2. PayU Hosted Checkout
       const form = document.createElement("form");
 
       form.method = "POST";
@@ -120,12 +122,11 @@ const TemplateCard = ({ template }) => {
       });
 
       document.body.appendChild(form);
-
-      // PayU par redirect
       form.submit();
     } catch (error) {
       console.error(error);
       alert("Payment process mein error aaya.");
+      setIsLoading(false);
     }
   };
 
@@ -186,9 +187,10 @@ const TemplateCard = ({ template }) => {
             <button
               type="button"
               onClick={handlePayment}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500 py-2.5 font-semibold text-white transition hover:bg-rose-600"
+              disabled={isLoading}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500 py-2.5 font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              🔒 Unlock for ₹{template.price}
+              {isLoading ? "Processing..." : `🔒 Unlock for ₹${template.price}`}
             </button>
           )
         ) : (

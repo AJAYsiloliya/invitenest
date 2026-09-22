@@ -65,6 +65,43 @@ const templates = [
     price: 49,
     design: "romantic-invitation",
   },
+    // Coming Soon templates
+  {
+    id: 9,
+    name: "Premium Wedding",
+    type: "Wedding",
+    image: "/templates/wedding-5.jpg",
+    price: 49,
+    design: "premium-wedding",
+    comingSoon: true,
+  },
+  {
+    id: 10,
+    name: "Baby Shower",
+    type: "Baby",
+    image: "/templates/baby-1.jpg",
+    price: 49,
+    design: "baby-shower",
+    comingSoon: true,
+  },
+  {
+    id: 11,
+    name: "Anniversary",
+    type: "Love",
+    image: "/templates/anniversary-1.jpg",
+    price: 49,
+    design: "anniversary",
+    comingSoon: true,
+  },
+  {
+    id: 12,
+    name: "Housewarming",
+    type: "Housewarming",
+    image: "/templates/housewarming-1.jpg",
+    price: 49,
+    design: "housewarming",
+    comingSoon: true,
+  },
 ];
 
 export default templates;

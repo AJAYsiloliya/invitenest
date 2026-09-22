@@ -18,12 +18,14 @@ const TemplateCard = ({
   const [user, setUser] = useState(null);
 
   const isPaid = template.price > 0;
+  const isComingSoon = template.comingSoon === true;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
 
-      if (!currentUser || !isPaid) {
+      // Coming Soon template ko access check ki zarurat nahi
+      if (!currentUser || !isPaid || isComingSoon) {
         setIsUnlocked(false);
         return;
       }
@@ -44,11 +46,7 @@ const TemplateCard = ({
 
         const data = await response.json();
 
-        if (data.hasAccess) {
-          setIsUnlocked(true);
-        } else {
-          setIsUnlocked(false);
-        }
+        setIsUnlocked(data.hasAccess === true);
       } catch (error) {
         console.error("Access check error:", error);
         setIsUnlocked(false);
@@ -56,9 +54,12 @@ const TemplateCard = ({
     });
 
     return () => unsubscribe();
-  }, [template.id, isPaid]);
+  }, [template.id, isPaid, isComingSoon]);
 
   const handlePayment = async () => {
+    // Coming Soon template ke liye payment allowed nahi
+    if (isComingSoon) return;
+
     if (loadingTemplateId !== null) return;
 
     if (!user) {
@@ -86,7 +87,7 @@ const TemplateCard = ({
 
       if (!response.ok) {
         console.error(data);
-        alert("Payment order create nahi hua.");
+        alert(data.error || "Payment order create nahi hua.");
         setLoadingTemplateId(null);
         return;
       }
@@ -135,6 +136,7 @@ const TemplateCard = ({
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-pink-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+      {/* Image */}
       <div className="relative overflow-hidden bg-rose-300">
         <Image
           src={template.image}
@@ -145,32 +147,45 @@ const TemplateCard = ({
           className="h-72 w-full bg-gray-100 object-contain transition duration-500 group-hover:scale-105"
         />
 
-        {isPaid && (
+        {/* Template Badge */}
+        {isComingSoon ? (
+          <div className="absolute right-3 top-3 z-10 rounded-full bg-gray-700 px-3 py-1.5 text-sm font-semibold text-white shadow">
+            Coming Soon
+          </div>
+        ) : isPaid ? (
           <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/75 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
             🔒 ₹{template.price}
           </div>
-        )}
-
-        {!isPaid && (
+        ) : (
           <div className="absolute right-3 top-3 z-10 rounded-full bg-green-500 px-3 py-1.5 text-sm font-semibold text-white shadow">
             Free
           </div>
         )}
       </div>
 
+      {/* Content */}
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-800">{template.name}</h3>
+        <h3 className="text-lg font-semibold text-gray-800">
+          {template.name}
+        </h3>
 
         <p className="mt-1 text-sm text-gray-500">{template.type}</p>
 
+        {/* Price */}
         <div className="mt-3">
-          {isPaid ? (
+          {isComingSoon ? (
+            <span className="text-sm font-medium text-gray-500">
+              Coming Soon
+            </span>
+          ) : isPaid ? (
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-rose-600">
                 ₹{template.price}
               </span>
 
-              <span className="text-xs text-gray-400">Premium Template</span>
+              <span className="text-xs text-gray-400">
+                Premium Template
+              </span>
             </div>
           ) : (
             <span className="text-sm font-medium text-green-600">
@@ -179,7 +194,16 @@ const TemplateCard = ({
           )}
         </div>
 
-        {isPaid ? (
+        {/* Button */}
+        {isComingSoon ? (
+          <button
+            type="button"
+            disabled
+            className="mt-4 w-full cursor-not-allowed rounded-xl bg-gray-300 py-2.5 font-semibold text-gray-600"
+          >
+            Coming Soon
+          </button>
+        ) : isPaid ? (
           isUnlocked ? (
             <Link
               href={`/create?template=${template.id}`}

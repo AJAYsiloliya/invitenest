@@ -64,7 +64,7 @@ export default function TemplatesClient() {
         </div>
       )}
       <h1 className="text-center text-3xl font-bold">Choose Your Template</h1>
-i9i
+
       <div className="mx-auto mt-10 grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {templates.map((template) => (
           <TemplateCard

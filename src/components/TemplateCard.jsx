@@ -16,6 +16,7 @@ const TemplateCard = ({
 
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [user, setUser] = useState(null);
+  const [message, setMessage] = useState("");
 
   const isPaid = template.price > 0;
   const isComingSoon = template.comingSoon === true;
@@ -24,7 +25,6 @@ const TemplateCard = ({
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
 
-      // Coming Soon template ko access check ki zarurat nahi
       if (!currentUser || !isPaid || isComingSoon) {
         setIsUnlocked(false);
         return;
@@ -47,8 +47,7 @@ const TemplateCard = ({
         const data = await response.json();
 
         setIsUnlocked(data.hasAccess === true);
-      } catch (error) {
-        console.error("Access check error:", error);
+      } catch {
         setIsUnlocked(false);
       }
     });
@@ -57,7 +56,8 @@ const TemplateCard = ({
   }, [template.id, isPaid, isComingSoon]);
 
   const handlePayment = async () => {
-    // Coming Soon template ke liye payment allowed nahi
+    setMessage("");
+
     if (isComingSoon) return;
 
     if (loadingTemplateId !== null) return;
@@ -86,8 +86,7 @@ const TemplateCard = ({
       const data = await response.json();
 
       if (!response.ok) {
-        console.error(data);
-        alert(data.error || "Payment order create nahi hua.");
+        setMessage(data.error || "Payment order create nahi hua.");
         setLoadingTemplateId(null);
         return;
       }
@@ -127,9 +126,8 @@ const TemplateCard = ({
 
       document.body.appendChild(form);
       form.submit();
-    } catch (error) {
-      console.error(error);
-      alert("Payment process mein error aaya.");
+    } catch {
+      setMessage("Payment process mein error aaya. Please try again.");
       setLoadingTemplateId(null);
     }
   };
@@ -165,11 +163,20 @@ const TemplateCard = ({
 
       {/* Content */}
       <div className="p-4">
+        {/* Message */}
+        {message && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            {message}
+          </div>
+        )}
+
         <h3 className="text-lg font-semibold text-gray-800">
           {template.name}
         </h3>
 
-        <p className="mt-1 text-sm text-gray-500">{template.type}</p>
+        <p className="mt-1 text-sm text-gray-500">
+          {template.type}
+        </p>
 
         {/* Price */}
         <div className="mt-3">

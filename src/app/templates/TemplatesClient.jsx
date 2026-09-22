@@ -63,7 +63,15 @@ export default function TemplatesClient() {
           </div>
         </div>
       )}
-      <h1 className="text-center text-3xl font-bold">Choose Your Template</h1>
+      <h1 className="text-center text-3xl font-bold">
+        Digital Invitation Templates
+      </h1>
+
+      <p className="mx-auto mt-3 max-w-2xl text-center text-gray-600">
+        Explore beautiful wedding, birthday, love and event invitation
+        templates. Choose a design, customize your details and create your
+        digital invitation online.
+      </p>
 
       <div className="mx-auto mt-10 grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {templates.map((template) => (

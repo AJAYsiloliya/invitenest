@@ -1,10 +1,8 @@
-
 export const metadata = {
-  title: "Refund Policy",
+  title: "Refund & Cancellation Policy",
   description:
-    "Read the InviteNest Refund Policy to understand eligibility and conditions for payment refunds.",
+    "Read the InviteNest Refund & Cancellation Policy for premium digital invitation template purchases and payment issues.",
 };
-
 
 export default function RefundPolicyPage() {
   return (
@@ -14,44 +12,50 @@ export default function RefundPolicyPage() {
           Refund & Cancellation Policy
         </h1>
 
-        <p className="mb-5 text-gray-700 leading-7">
-          This policy explains how refunds and payment-related requests are
-          handled for InviteNest services.
+        <p className="mb-5 leading-7 text-gray-700">
+          This policy explains how payment, refund and cancellation-related
+          requests are handled for InviteNest services.
         </p>
 
-        <h2 className="mt-8 mb-2 text-xl font-semibold">
+        <h2 className="mb-2 mt-8 text-xl font-semibold text-gray-900">
           Premium Template Purchases
         </h2>
-        <p className="mb-5 text-gray-700 leading-7">
+
+        <p className="mb-5 leading-7 text-gray-700">
           Premium template purchases are processed through the payment
-          provider used on InviteNest. Please check the purchase details
-          carefully before completing payment.
+          provider used by InviteNest. Please review the template and payment
+          details carefully before completing your purchase.
         </p>
 
-        <h2 className="mt-8 mb-2 text-xl font-semibold">
+        <h2 className="mb-2 mt-8 text-xl font-semibold text-gray-900">
           Failed or Duplicate Payments
         </h2>
-        <p className="mb-5 text-gray-700 leading-7">
-          If your payment was deducted but the premium access was not
-          activated, please contact us with the relevant payment details so
-          that the transaction can be checked.
+
+        <p className="mb-5 leading-7 text-gray-700">
+          If money has been deducted from your account but premium access was
+          not activated, or if you believe you were charged more than once,
+          please contact us with the relevant transaction details so the
+          payment can be checked.
         </p>
 
-        <h2 className="mt-8 mb-2 text-xl font-semibold">
+        <h2 className="mb-2 mt-8 text-xl font-semibold text-gray-900">
           Refund Requests
         </h2>
-        <p className="mb-5 text-gray-700 leading-7">
-          Refund requests will be reviewed based on the transaction and the
-          circumstances of the request. Any approved refund will be processed
-          through the applicable payment provider.
+
+        <p className="mb-5 leading-7 text-gray-700">
+          Refund requests are reviewed based on the transaction and the
+          circumstances of the request. If a refund is approved, it will be
+          processed through the applicable payment provider.
         </p>
 
-        <h2 className="mt-8 mb-2 text-xl font-semibold">
-          Contact Us
+        <h2 className="mb-2 mt-8 text-xl font-semibold text-gray-900">
+          How to Contact Us
         </h2>
-        <p className="text-gray-700 leading-7">
-          For payment or refund-related questions, please contact us using the
-          support email listed on our Contact Us page.
+
+        <p className="leading-7 text-gray-700">
+          For payment, cancellation or refund-related questions, please
+          contact us using the support email listed on our Contact Us page.
+          Include relevant transaction details so we can review your request.
         </p>
       </div>
     </main>

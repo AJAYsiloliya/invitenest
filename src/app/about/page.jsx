@@ -1,12 +1,8 @@
-
 export const metadata = {
-  title: "About",
+  title: "About InviteNest",
   description:
     "Learn about InviteNest, a simple platform for creating beautiful digital wedding, birthday, love and event invitations.",
 };
-
-
-
 
 export default function AboutPage() {
   return (
@@ -16,25 +12,31 @@ export default function AboutPage() {
           About InviteNest
         </h1>
 
-        <p className="mb-5 text-gray-700 leading-7">
-          InviteNest is an online platform for creating and sharing beautiful
-          digital invitations for special occasions.
+        <p className="mb-5 leading-7 text-gray-700">
+          InviteNest is a simple online platform that helps you create
+          beautiful digital invitations for your special moments.
         </p>
 
-        <p className="mb-5 text-gray-700 leading-7">
-          You can create invitations for weddings, birthdays, engagements,
-          love celebrations and other memorable events. Our goal is to make
-          digital invitation creation simple, convenient and accessible.
+        <p className="mb-5 leading-7 text-gray-700">
+          Whether you are planning a wedding, birthday, engagement, love
+          celebration, baby event or housewarming, you can choose a template,
+          add your event details and create your invitation online.
         </p>
 
-        <p className="mb-5 text-gray-700 leading-7">
+        <p className="mb-5 leading-7 text-gray-700">
+          Our goal is to make creating and sharing digital invitations simple
+          and convenient. Once your invitation is ready, you can share it with
+          friends and family through an online link.
+        </p>
+
+        <p className="mb-5 leading-7 text-gray-700">
           InviteNest offers both free and premium invitation templates.
           Premium templates may be available for ₹49 as shown on the website.
         </p>
 
-        <p className="text-gray-700 leading-7">
-          InviteNest is designed to provide an easy way to create, customize
-          and share digital invitations with friends and family.
+        <p className="leading-7 text-gray-700">
+          We are building InviteNest to make digital invitations easier to
+          create, customize and share without making the process complicated.
         </p>
       </div>
     </main>

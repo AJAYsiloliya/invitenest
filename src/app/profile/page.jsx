@@ -11,6 +11,8 @@ export default function Profile() {
   const [unlockedTemplates, setUnlockedTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -24,7 +26,6 @@ export default function Profile() {
       }
 
       try {
-        // Created invitations
         const q = query(
           collection(db, "invitations"),
           where("userId", "==", currentUser.uid),
@@ -39,7 +40,6 @@ export default function Profile() {
 
         setInvitations(data);
 
-        // Premium unlocked templates
         const token = await getIdToken(currentUser);
 
         const response = await fetch("/api/payment/paid-templates", {
@@ -67,34 +67,100 @@ export default function Profile() {
     return () => unsubscribe();
   }, []);
 
+  const handleDelete = async () => {
+    if (!deleteId || !auth.currentUser) return;
+
+    try {
+      setDeletingId(deleteId);
+
+      const token = await getIdToken(auth.currentUser);
+
+      const response = await fetch(`/api/invitation/${deleteId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Failed to delete invitation.");
+        return;
+      }
+
+      setInvitations((current) =>
+        current.filter((invitation) => invitation.id !== deleteId),
+      );
+
+      setDeleteId(null);
+    } catch (error) {
+      console.error("Delete invitation error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-pink-50 px-5 pt-24 pb-12">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 px-5 pb-16 pt-28">
+      <div className="mx-auto max-w-6xl">
 
-        <h1 className="text-3xl font-bold">Profile</h1>
+        {/* Profile Header */}
+        <section className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-pink-100 md:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-red-500 text-3xl font-bold text-white shadow-lg">
+              {user?.email?.charAt(0).toUpperCase() || "U"}
+            </div>
 
-        <p className="mt-2 text-2xl text-gray-600">
-          {user?.email}
-        </p>
+            <div>
+              <p className="text-sm font-medium text-pink-500">
+                Welcome to InviteNest
+              </p>
+
+              <h1 className="mt-1 text-3xl font-bold text-gray-900">
+                Your Profile
+              </h1>
+
+              <p className="mt-1 break-all text-gray-500">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* Premium Templates */}
-        <section className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Premium Templates
-          </h2>
+        <section className="mt-10">
+          <div className="mb-5">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Premium Templates
+            </h2>
+
+            <p className="mt-1 text-gray-500">
+              Templates you have unlocked.
+            </p>
+          </div>
 
           {loading ? (
-            <p className="mt-4 text-gray-500">
-              Loading premium templates...
-            </p>
-          ) : unlockedTemplates.length === 0 ? (
-            <div className="mt-4 rounded-2xl bg-white p-6 shadow">
+            <div className="rounded-3xl bg-white p-8 text-center shadow">
               <p className="text-gray-500">
-                You haven't unlocked any premium templates yet.
+                Loading premium templates...
+              </p>
+            </div>
+          ) : unlockedTemplates.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-pink-300 bg-white p-8 text-center shadow-sm">
+              <div className="text-4xl">🎨</div>
+
+              <h3 className="mt-3 text-lg font-bold text-gray-800">
+                No premium templates yet
+              </h3>
+
+              <p className="mt-1 text-gray-500">
+                Your unlocked premium templates will appear here.
               </p>
             </div>
           ) : (
-            <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {unlockedTemplates.map((item) => {
                 const template = templates.find(
                   (template) => template.id === item.templateId,
@@ -105,32 +171,34 @@ export default function Profile() {
                 return (
                   <div
                     key={item.templateId}
-                    className="rounded-2xl bg-white p-5 shadow"
+                   className="mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-md transition hover:-translate-y-1 hover:shadow-xl"
                   >
                     <img
                       src={template.image}
                       alt={template.name}
-                      className="h-48 w-full rounded-xl object-cover"
+                      className="h-40 w-full object-cover sm:h-48"
                     />
 
-                    <h3 className="mt-4 text-xl font-bold">
-                      {template.name}
-                    </h3>
+                    <div className="p-4">
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {template.name}
+                      </h3>
 
-                    <p className="mt-1 text-sm text-gray-500">
-                      {template.type}
-                    </p>
-
-                    <p className="mt-3 font-semibold text-green-600">
-                      ✓ Unlocked
-                    </p>
-
-                    {item.expiresAt && (
                       <p className="mt-1 text-sm text-gray-500">
-                        Expires:{" "}
-                        {new Date(item.expiresAt).toLocaleDateString()}
+                        {template.type}
                       </p>
-                    )}
+
+                      <p className="mt-3 inline-block rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-green-600">
+                        ✓ Unlocked
+                      </p>
+
+                      {item.expiresAt && (
+                        <p className="mt-3 text-sm text-gray-500">
+                          Expires:{" "}
+                          {new Date(item.expiresAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -140,22 +208,36 @@ export default function Profile() {
 
         {/* Created Invitations */}
         <section className="mt-12">
-          <h2 className="text-2xl font-bold">
-            Your Created Invitations
-          </h2>
+          <div className="mb-5">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Your Invitations
+            </h2>
+
+            <p className="mt-1 text-gray-500">
+              Manage the invitations you have created.
+            </p>
+          </div>
 
           {loading ? (
-            <p className="mt-8 text-gray-500">
-              Loading invitations...
-            </p>
-          ) : invitations.length === 0 ? (
-            <div className="mt-8 rounded-2xl bg-white p-8 text-center shadow">
+            <div className="rounded-3xl bg-white p-8 text-center shadow">
               <p className="text-gray-500">
-                You haven't created any invitations yet.
+                Loading invitations...
+              </p>
+            </div>
+          ) : invitations.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-pink-300 bg-white p-10 text-center shadow-sm">
+              <div className="text-5xl">💌</div>
+
+              <h3 className="mt-4 text-xl font-bold text-gray-800">
+                No invitations yet
+              </h3>
+
+              <p className="mt-2 text-gray-500">
+                Your created invitations will appear here.
               </p>
             </div>
           ) : (
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {invitations.map((invitation) => {
                 const template = templates.find(
                   (item) => item.id === invitation.templateId,
@@ -164,38 +246,86 @@ export default function Profile() {
                 return (
                   <div
                     key={invitation.id}
-                    className="rounded-2xl bg-white p-5 shadow"
+                    className="overflow-hidden rounded-3xl bg-white shadow-md transition hover:-translate-y-1 hover:shadow-xl"
                   >
                     <img
                       src={template?.image}
                       alt={template?.name || "Invitation"}
-                      className="h-48 w-full rounded-xl object-cover"
+                      className="h-52 w-full object-cover"
                     />
 
-                    <h2 className="mt-4 text-xl font-bold">
-                      {template?.name || "Invitation"}
-                    </h2>
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {template?.name || "Invitation"}
+                      </h3>
 
-                    <p className="mt-1 text-sm text-gray-500">
-                      {template?.type || "Event"}
-                    </p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {template?.type || "Event"}
+                      </p>
 
-                    <button
-                      onClick={() =>
-                        (window.location.href = `/invitation/${invitation.id}`)
-                      }
-                      className="mt-4 w-full rounded-xl bg-pink-500 py-3 font-semibold text-white hover:bg-pink-600"
-                    >
-                      View Invitation
-                    </button>
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() =>
+                            (window.location.href = `/invitation/${invitation.id}`)
+                          }
+                          className="rounded-xl bg-pink-500 py-3 text-sm font-semibold text-white transition hover:bg-pink-600"
+                        >
+                          View
+                        </button>
+
+                        <button
+                          onClick={() => setDeleteId(invitation.id)}
+                          className="rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
         </section>
-
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-5 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-3xl">
+              🗑️
+            </div>
+
+            <h2 className="mt-5 text-2xl font-bold text-gray-900">
+              Delete Invitation?
+            </h2>
+
+            <p className="mt-2 text-gray-500">
+              This invitation will be removed from your account and its
+              public link will no longer work.
+            </p>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setDeleteId(null)}
+                disabled={deletingId !== null}
+                className="rounded-xl border border-gray-200 py-3 font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                disabled={deletingId !== null}
+                className="rounded-xl bg-red-500 py-3 font-semibold text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingId ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

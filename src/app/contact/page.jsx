@@ -1,51 +1,61 @@
-
-
 export const metadata = {
-  title: "Contact",
+  title: "Contact InviteNest",
   description:
-    "Contact InviteNest for questions, support, feedback, or help with creating digital invitations.",
+    "Contact InviteNest for questions, support, feedback, payment issues, or help with digital invitations.",
 };
-
 
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-pink-50 px-6 py-24">
       <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-md md:p-12">
         <h1 className="mb-6 text-center text-4xl font-bold text-pink-600">
-          Contact Us
+          Contact InviteNest
         </h1>
 
         <p className="mb-8 text-center leading-7 text-gray-700">
-          If you have any questions, feedback, or need help with InviteNest,
-          feel free to contact us.
+          Have a question about creating an invitation, using a template, or
+          making a payment? We are here to help.
         </p>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
-            <h2 className="mb-1 text-xl font-semibold text-gray-900">
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">
               Email Support
             </h2>
 
-            <p className="text-gray-700">
-              For support and enquiries, please contact us through our
-              registered support email.
+            <p className="leading-7 text-gray-700">
+              For questions, feedback, payment issues, or other support
+              requests, you can reach us by email.
             </p>
 
             <a
               href="mailto:Invitenetsupport@gmail.com"
-              className="mt-2 inline-block font-medium text-pink-600 hover:underline"
+              className="mt-3 inline-block font-medium text-pink-600 hover:underline"
             >
               Invitenetsupport@gmail.com
             </a>
           </div>
 
           <div>
-            <h2 className="mb-1 text-xl font-semibold text-gray-900">
-              Support
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">
+              How Can We Help?
             </h2>
 
-            <p className="text-gray-700 leading-7">
-              We aim to respond to customer queries and support requests as
+            <p className="leading-7 text-gray-700">
+              You can contact us if you need help with creating or sharing
+              digital invitations, templates, your account, or a payment.
+              Please include relevant details in your email so we can
+              understand your issue.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">
+              Support Response
+            </h2>
+
+            <p className="leading-7 text-gray-700">
+              We aim to respond to customer questions and support requests as
               soon as reasonably possible.
             </p>
           </div>

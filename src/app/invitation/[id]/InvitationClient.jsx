@@ -27,7 +27,7 @@ export default function InvitationPage() {
 
       const invitationData = await response.json();
 
-      console.log("INVITATION DATA:", invitationData);
+      
 
       setData(invitationData);
     } catch {

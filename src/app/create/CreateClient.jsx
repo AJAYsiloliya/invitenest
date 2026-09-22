@@ -8,6 +8,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
+import { getIdToken } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -87,10 +88,8 @@ function CreateContent() {
     const hasAccess = await checkPaidAccess();
 
     if (!hasAccess) {
-      if (!hasAccess) {
-        setShowPaymentAlert(true);
-        return;
-      }
+      setShowPaymentAlert(true);
+      return;
     }
 
     const user = auth.currentUser;
@@ -128,19 +127,33 @@ function CreateContent() {
       return true;
     }
 
-    const cookieResponse = await fetch("/api/payment/check-access", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        templateId: selectedTemplate.id,
-      }),
-    });
+    const user = auth.currentUser;
 
-    const data = await cookieResponse.json();
+    if (!user) {
+      return false;
+    }
 
-    return data.hasAccess;
+    try {
+      const token = await getIdToken(user);
+
+      const response = await fetch("/api/payment/check-access", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          templateId: selectedTemplate.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      return data.hasAccess === true;
+    } catch (error) {
+      console.error("Premium access check error:", error);
+      return false;
+    }
   };
 
   return (

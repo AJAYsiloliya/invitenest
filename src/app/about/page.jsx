@@ -1,3 +1,13 @@
+
+export const metadata = {
+  title: "About",
+  description:
+    "Learn about InviteNest, a simple platform for creating beautiful digital wedding, birthday, love and event invitations.",
+};
+
+
+
+
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-pink-50 px-6 py-24">

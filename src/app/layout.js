@@ -16,7 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "InviteNest - Create Beautiful Digital Invitations",
+  title: {
+    default: "InviteNest - Create Beautiful Digital Invitations",
+    template: "%s | InviteNest",
+  },
   description:
     "Create beautiful digital wedding, birthday, love and event invitations online with InviteNest.",
   verification: {

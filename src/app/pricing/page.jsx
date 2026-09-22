@@ -1,3 +1,12 @@
+
+
+export const metadata = {
+  title: "Pricing",
+  description:
+    "Explore InviteNest pricing and premium digital invitation templates starting at ₹49.",
+};
+
+
 export default function PricingPage() {
   return (
     <main className="min-h-screen bg-pink-50 px-6 py-24">

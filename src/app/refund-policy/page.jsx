@@ -1,3 +1,11 @@
+
+export const metadata = {
+  title: "Refund Policy",
+  description:
+    "Read the InviteNest Refund Policy to understand eligibility and conditions for payment refunds.",
+};
+
+
 export default function RefundPolicyPage() {
   return (
     <main className="min-h-screen bg-pink-50 px-6 py-24">

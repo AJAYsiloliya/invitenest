@@ -7,12 +7,15 @@ import { auth } from "@/lib/firebase";
 import Image from "next/image";
 import Link from "next/link";
 
-const TemplateCard = ({ template }) => {
+const TemplateCard = ({
+  template,
+  loadingTemplateId,
+  setLoadingTemplateId,
+}) => {
   const router = useRouter();
 
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const isPaid = template.price > 0;
 
@@ -56,14 +59,14 @@ const TemplateCard = ({ template }) => {
   }, [template.id, isPaid]);
 
   const handlePayment = async () => {
-    if (isLoading) return;
+    if (loadingTemplateId !== null) return;
 
     if (!user) {
       router.push("/login");
       return;
     }
 
-    setIsLoading(true);
+    setLoadingTemplateId(template.id);
 
     try {
       const token = await getIdToken(user);
@@ -84,7 +87,7 @@ const TemplateCard = ({ template }) => {
       if (!response.ok) {
         console.error(data);
         alert("Payment order create nahi hua.");
-        setIsLoading(false);
+        setLoadingTemplateId(null);
         return;
       }
 
@@ -126,7 +129,7 @@ const TemplateCard = ({ template }) => {
     } catch (error) {
       console.error(error);
       alert("Payment process mein error aaya.");
-      setIsLoading(false);
+      setLoadingTemplateId(null);
     }
   };
 
@@ -188,10 +191,12 @@ const TemplateCard = ({ template }) => {
             <button
               type="button"
               onClick={handlePayment}
-              disabled={isLoading}
+              disabled={loadingTemplateId !== null}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500 py-2.5 font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isLoading ? "Processing..." : `🔒 Unlock for ₹${template.price}`}
+              {loadingTemplateId === template.id
+                ? "Processing..."
+                : `🔒 Unlock for ₹${template.price}`}
             </button>
           )
         ) : (

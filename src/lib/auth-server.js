@@ -14,8 +14,7 @@ export async function verifyUser(request) {
     const decodedToken = await getAuth().verifyIdToken(token);
 
     return decodedToken;
-  } catch (error) {
-    console.error("Auth verification failed:", error);
+  } catch {
     return null;
   }
 }

@@ -1,7 +1,6 @@
 "use client";
 
-"use client";
-
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -10,6 +9,7 @@ import Link from "next/link";
 const Navbar = () => {
   const [menu, setMenu] = useState(false);
   const [user, setUser] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -21,21 +21,68 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await signOut(auth);
+    router.push("/login")
   };
 
   return (
     <>
-      <nav className="flex fixed z-30 top-0 w-[100%] justify-between items-center px-3.5 py-4 bg-pink-300">
-        {/* Logo */}
-        <Link href="/" className="text-xl font-bold text-pink-800">
-          Invite<span className="text-red-500">Nest</span>
+      <nav className="fixed top-0 z-30 flex w-full items-center justify-between bg-pink-300 px-3.5 py-4">
+  {/* Logo */}
+  <Link href="/" className="text-xl font-bold text-pink-800">
+    Invite<span className="text-red-500">Nest</span>
+  </Link>
+
+  {/* Desktop Menu */}
+  <div className="hidden items-center gap-6 md:flex">
+    {user && (
+      <Link href="/profile" className="font-semibold text-gray-700 hover:text-pink-600">
+        Profile
+      </Link>
+    )}
+
+    <Link href="/" className="font-semibold text-gray-700 hover:text-pink-600">
+      Home
+    </Link>
+
+    <Link href="/about" className="font-semibold text-gray-700 hover:text-pink-600">
+      About
+    </Link>
+
+    <Link href="/contact" className="font-semibold text-gray-700 hover:text-pink-600">
+      Contact
+    </Link>
+
+    {user ? (
+      <button
+        onClick={handleLogout}
+        className="font-semibold text-red-500 hover:text-red-600"
+      >
+        Logout
+      </button>
+    ) : (
+      <>
+        <Link href="/login" className="font-semibold text-pink-600 hover:text-pink-700">
+          Login
         </Link>
 
-        {/* Menu */}
-        <button onClick={() => setMenu(true)}>
-          <img src="/Menu.png" alt="menu" className="h-6" />
-        </button>
-      </nav>
+        <Link
+          href="/signup"
+          className="rounded-lg bg-pink-500 px-4 py-2 font-semibold text-white hover:bg-pink-600"
+        >
+          Sign Up
+        </Link>
+      </>
+    )}
+  </div>
+
+  {/* Mobile Menu Button */}
+  <button
+    onClick={() => setMenu(true)}
+    className="md:hidden"
+  >
+    <img src="/Menu.png" alt="menu" className="h-6" />
+  </button>
+</nav>
 
       {/* Overlay */}
       {menu && (
@@ -63,23 +110,23 @@ const Navbar = () => {
         </div>
 
         {/* User Email - Top */}
-        {user && (
-          <div className="mx-5 mb-5 rounded-2xl bg-gradient-to-r from-pink-100 to-rose-100 p-4">
-            <p className="text-xs font-medium text-pink-500">Logged in as</p>
-
-            <p className="mt-1 break-all text-sm font-semibold text-pink-800">
-              {user.email}
-            </p>
-          </div>
-        )}
-
-        {/* Links */}
         <div className="flex flex-col gap-2 px-5 text-base font-semibold">
+          {user && (
+            <Link
+              href="/profile"
+              onClick={() => setMenu(false)}
+              className="rounded-xl px-4 py-3 text-gray-700 transition
+      hover:bg-pink-100 hover:text-pink-600"
+            >
+              👤 Profile
+            </Link>
+          )}
+
           <Link
             href="/"
             onClick={() => setMenu(false)}
             className="rounded-xl px-4 py-3 text-gray-700 transition
-      hover:bg-pink-100 hover:text-pink-600"
+    hover:bg-pink-100 hover:text-pink-600"
           >
             🏠 Home
           </Link>

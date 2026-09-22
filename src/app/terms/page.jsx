@@ -1,3 +1,12 @@
+
+
+export const metadata = {
+  title: "Terms & Conditions",
+  description:
+    "Read the InviteNest Terms & Conditions for using our digital invitation creation and sharing services.",
+};
+
+
 export default function TermsPage() {
   return (
     <main className="min-h-screen bg-pink-50 px-6 py-24">

@@ -1,3 +1,12 @@
+
+
+export const metadata = {
+  title: "Privacy Policy",
+  description:
+    "Read the InviteNest Privacy Policy to learn how we collect, use and protect your information.",
+};
+
+
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-pink-50 px-6 py-24">

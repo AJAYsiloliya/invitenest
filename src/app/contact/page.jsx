@@ -1,3 +1,12 @@
+
+
+export const metadata = {
+  title: "Contact",
+  description:
+    "Contact InviteNest for questions, support, feedback, or help with creating digital invitations.",
+};
+
+
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-pink-50 px-6 py-24">
